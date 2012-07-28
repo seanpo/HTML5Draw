@@ -6,11 +6,6 @@ var DEFAULT_ACTION_COLOR = "rgba(0,0,0,1)"; // black
 var DEFAULT_ACTION_SIZE = 3; // 3px
 var DEFAULT_ACTION_OPACITY = 1; // fully opaque
 
-var SERVER_URL = "localhost";
-
-var DRAWACTION_SYNC_INTERVAL = 200; // interval in which the client syncs with server in milliseconds
-var CLIENTINFO_SYNC_INTERVAL = 1000; // interval in which the client information is synced with server in milliseconds
-
 /************** Helper classes***************/
 // This DrawAction object keeps a history of the actions that have been made;
 DrawAction = function () {
@@ -31,6 +26,7 @@ DrawAction = function () {
         "color":[]
      };  
   };
+  this.length = 0;
   
   this.get = function (key, index) {
     if (["x","y"].indexOf(key) !== -1){
@@ -40,9 +36,12 @@ DrawAction = function () {
     }
   }
 
-  this.history = createHistory();
+  this.history = this.createHistory();
+  this.setHistory = function (history){
+    _this.history = history;
+  }
 
-  this.toJSON() = function (){
+  this.toJSON = function (){
     return JSON.stringify(_this.history);
   };
   
@@ -50,9 +49,32 @@ DrawAction = function () {
     this.history = createHistory();
   };
 
-  this.currColor = DEFAULT_ACTION_COLOR; 
+
+  this.color = DEFAULT_ACTION_COLOR; 
   this.prevColor = DEFAULT_ACTION_COLOR;
   this.size = DEFAULT_ACTION_SIZE;
+  this.drag = false;
+  this.paintBucket = false;
+
+  this.setColor = function ( color ) {
+    _this.color = color;
+  };
+
+  this.setSize = function ( size ) {
+    _this.size = size;
+  };
+
+  this.setDrag = function () {
+    _this.drag = true;
+  };
+
+  this.unsetDrag = function () {
+    _this.drag = false;
+  };
+
+  this.togglePaintBucket = function () {
+    _this.paintBucket = _this.paintBucket;
+  }
 
   this.isEmpty = function () {
     // If this' x array is of length 0, then you know history is empty;
@@ -63,45 +85,22 @@ DrawAction = function () {
     return _this.history["click"]["x"].length;
   }
 
-  this.update = function(click, paintBucket, drag, size, color){
+  this.update = function(click){
     var _history = _this.history;
     _history['click']['x'].push(click['x']);
     _history['click']['y'].push(click['y']);
 
-    _history['paintBucket'].push(paintBucket);
-    _history['drag'].push(drag);
-    _history['size'].push(size);
-    _history['color'].push(color);
-  }
-}
+    // This if statement is to get rid of the issue where when someone undo, the first dot still remains.
+    _history['paintBucket'].push(_this.paintBucket);
+    if (_this.drag && _this.length != 0) {
+      _history['drag'][_this.length] = true;
+    }
 
-// This object keeps track of the current user, and user information
-DrawClient = function (name) {
-  var _this = this;
-  this.name = name; 
-  this.picture = "";
-  this.id = -1;
+    _history['drag'].push(_this.drag);
+    _history['size'].push(_this.size);
+    _history['color'].push(_this.color);
 
-  // This function expects an integer id; 
-  this.setID = function (id) {
-    _this.id = id; 
-  }
-
-  // This function expects a URL that links to the user's picture
-  this.setPicture = function (url) {
-    _this.picture = url 
-  }
-
-  this.init = function ( id, url ) {
-    _this.setID(id);
-    _this.setPicture(url);
-  }
-
-  this.toJSON = function () {
-    return JSON.stringify({"name":_this.name,
-                           "picture":_this.picture,
-                           "id":_this.id
-                          });
+    length++;
   }
 }
 
@@ -110,48 +109,20 @@ DrawClient = function (name) {
 HTML5Draw = function (dom) {
   var _this = this;
   this.domID = dom;
+  this.$canvas = $('#' + dom );
   this.canvas = document.getElementById(dom);
   // Set up context, and set styles:
   this.context = canvas.getContext("2d");
   this.context.lineJoin = "round";
+  this.context.canvas.height = this.$canvas.height();
+  this.context.canvas.width = this.$canvas.width();
 
   this.setLineJoin = function (type){
     _this.context.lineJoin = type;
   };
 
-  this.clientList = [];
-  this.client = new DrawClient();
-
   // This is the consolidated Action List that is recieved from server
   this.mainAction = new DrawAction();
-  // Set how often the server and client syncs in milliseconds.
-  this.syncInterval = DRAWACTION_SYNC_INTERVAL;
-  this.setSyncInterval = function (interval) {
-    _this.syncInterval = interval;
-  };
-
- // Set how often the server and client syncs users in milliseconds.
-  this.cSyncInterval = CLIENTINFO_SYNC_INTERVAL;
-  this.setCSyncInterval = function (interval) {
-    _this.cSyncInterval = interval;
-  };
-
-  this.updateUserList = function () {
-    $.ajax({
-      type: 'POST',
-      url: SERVER_URL,
-      // This is the user data that you send to server
-      data: _this.client.toJSON(),
-      // this is the user data that the server sends back
-      success: function ( clientList ) {
-        // Make sure no duplicate entries are there
-        _this.clientList = [];
-        for (index in clientList){
-          _this.clientList.push(clientList[index]);
-        }
-      }
-    });
-  };
 
   this.redraw = function (){
     var mainAction = _this.mainAction;
@@ -162,7 +133,7 @@ HTML5Draw = function (dom) {
       var x = mainAction.get("x", i);
       var y = mainAction.get("y", i);
       var color = mainAction.get("color", i);
-      if (mainAction.get("paintBucket", i){
+      if (mainAction.get("paintBucket", i)){
         _paintBucket(x, y, color);
       } else {
         _this.context.beginPath();
@@ -181,20 +152,37 @@ HTML5Draw = function (dom) {
   }
 
   this.clearCanvas = function () {
-    _this.mainAction.clearHistory()'
+    _this.mainAction.clearHistory();
     _this.redraw();
   }
 
-  this.sync = function ( ){
-    // Send ajax request with information inside the List object. 
-    $ajax
-   };
-    setInterval( sync, syncInterval);
-    this.clientList
 
-  }
+  /********************* Actions *********************************************/
+  this.$canvas.mousedown( function (e) {
+    var $this = _this.$canvas;
+    _this.mainAction.update({ x : e.pageX - $this.offset().left, 
+                              y : e.pageY - $this.offset().top});
+
+    // drag is set after the main action is updated because there is the possibility that the user will let go right after.
+    _this.mainAction.setDrag();      
+    _this.redraw();
+  });
+
+  $(document).mouseup( function () {
+    _this.mainAction.unsetDrag();
+  });
+
+  this.$canvas.mousemove( function (e) {
+    if ( _this.mainAction.drag && !_this.mainAction.paintBucket ){
+      var $this = _this.$canvas;
+      _this.mainAction.update({ x : e.pageX - $this.offset().left, 
+                                y : e.pageY - $this.offset().top});
+      _this.redraw();
+    }
+  });
 
   // This is pretty fucked up code. 
+  /*
   function paint_bucket(startX, startY, curClickColor){
     var pixelStack = [[startX, startY]];
     curClickColor = rgbaStringToObject(curClickColor);
@@ -244,4 +232,5 @@ HTML5Draw = function (dom) {
       }
       
       if(x < canvas_width-1)
+  */
 }
