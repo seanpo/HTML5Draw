@@ -126,8 +126,15 @@ HTML5Draw = function (dom) {
   this.mainAction = new DrawAction();
   // Set how often the server and client syncs in milliseconds.
   this.syncInterval = DRAWACTION_SYNC_INTERVAL;
-  // Set how often the server and client syncs users in milliseconds.
+  this.setSyncInterval = function (interval) {
+    _this.syncInterval = interval;
+  };
+
+ // Set how often the server and client syncs users in milliseconds.
   this.cSyncInterval = CLIENTINFO_SYNC_INTERVAL;
+  this.setCSyncInterval = function (interval) {
+    _this.cSyncInterval = interval;
+  };
 
   this.updateUserList = function () {
     $.ajax({
