@@ -123,7 +123,7 @@ HTML5Draw = function (dom) {
   this.client = new DrawClient();
 
   // This is the consolidated Action List that is recieved from server
-  this. mainAction = new DrawAction();
+  this.mainAction = new DrawAction();
   // Set how often the server and client syncs in milliseconds.
   this.syncInterval = DRAWACTION_SYNC_INTERVAL;
   // Set how often the server and client syncs users in milliseconds.
