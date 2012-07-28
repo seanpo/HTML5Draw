@@ -41,14 +41,13 @@ DrawAction = function () {
     _this.history = history;
   }
 
-  this.toJSON = function (){
-    return JSON.stringify(_this.history);
-  };
-  
   this.clearHistory = function () {
     this.history = createHistory();
   };
 
+  this.toJSON = function () { 
+    return JSON.stringify(_this.history);
+  }
 
   this.color = DEFAULT_ACTION_COLOR; 
   this.prevColor = DEFAULT_ACTION_COLOR;
@@ -103,15 +102,35 @@ DrawAction = function () {
 
     length++;
   }
+
+  // This function recieves a set similar to that of history and updates the current History with it 
+  this.updateSet = function ( set ){
+      var _history = _this.history;
+      var pushX = set['click']['x'];
+      var pushY = set['click']['y'];
+
+      for (index in pushX){
+        _history['click']['x'].push(pushX[index]);
+        _history['click']['y'].push(pushY[index]);
+      }
+
+      _history['drag'].concat(set['drag']);
+      _history['size'].concat(set['size']);
+      _history['color'].concat(set['color']);
+  };
+  
 }
 
 /*********************************************/
 
 HTML5Draw = function (dom) {
   var _this = this;
+
   this.domID = dom;
+
   this.$canvas = $('#' + dom );
   this.canvas = document.getElementById(dom);
+
   // Set up context, and set styles:
   this.context = canvas.getContext("2d");
   this.context.lineJoin = "miter";
@@ -124,6 +143,8 @@ HTML5Draw = function (dom) {
 
   // This is the consolidated Action List that is recieved from server
   this.mainAction = new DrawAction();
+  // This is the information caught in the Stanza
+  this.stanza = new DrawAction();
 
   this.redraw = function (){
     var mainAction = _this.mainAction;
@@ -158,28 +179,44 @@ HTML5Draw = function (dom) {
     _this.redraw();
   }
 
-
+  /********************* Utility Functions ***********************************/
+  // converts an event object to 
+  this._createAction(e){
+    var $this = _this.$canvas;
+    return { x : e.pageX - $this.offset().left, 
+             y : e.pageY - $this.offset().top};
+  }
   /********************* Actions *********************************************/
   this.$canvas.mousedown( function (e) {
-    var $this = _this.$canvas;
-    _this.mainAction.update({ x : e.pageX - $this.offset().left, 
-                              y : e.pageY - $this.offset().top});
-
+    _this.mainAction.update( _this._createAction(e) );
     // drag is set after the main action is updated because there is the possibility that the user will let go right after.
     _this.mainAction.setDrag();      
+
+    _this.stanza.update( _this._createAction(e) );
+    _this.stanza.setDrag();
+
     _this.redraw();
+
+    _this.$canvas.trigger("updateCanvas");
   });
 
   $(document).mouseup( function () {
     _this.mainAction.unsetDrag();
+    _this.stanza.unsetDrag();
+
+    _this.$canvas.trigger("stanzaComplete", [_this.stanza]);
+    // A mouseup signifies a new stanza
+    _this.stanza = new DrawAction();
   });
 
   this.$canvas.mousemove( function (e) {
     if ( _this.mainAction.drag && !_this.mainAction.paintBucket ){
-      var $this = _this.$canvas;
-      _this.mainAction.update({ x : e.pageX - $this.offset().left, 
-                                y : e.pageY - $this.offset().top});
+      _this.mainAction.update( _this._createAction(e) );
+      _this.stanza.update( _this._createAction(e) );
+
       _this.redraw();
+
+      _this.$canvas.trigger("updateCanvas");
     }
   });
 
