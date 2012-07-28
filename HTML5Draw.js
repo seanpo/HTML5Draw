@@ -57,6 +57,7 @@ DrawAction = function () {
   this.paintBucket = false;
 
   this.setColor = function ( color ) {
+    _this.prevColor = _this.color;
     _this.color = color;
   };
 
@@ -113,7 +114,7 @@ HTML5Draw = function (dom) {
   this.canvas = document.getElementById(dom);
   // Set up context, and set styles:
   this.context = canvas.getContext("2d");
-  this.context.lineJoin = "round";
+  this.context.lineJoin = "miter";
   this.context.canvas.height = this.$canvas.height();
   this.context.canvas.width = this.$canvas.width();
 
@@ -133,6 +134,7 @@ HTML5Draw = function (dom) {
       var x = mainAction.get("x", i);
       var y = mainAction.get("y", i);
       var color = mainAction.get("color", i);
+
       if (mainAction.get("paintBucket", i)){
         _paintBucket(x, y, color);
       } else {
@@ -144,7 +146,7 @@ HTML5Draw = function (dom) {
         }
         _this.context.lineTo(x, y);
         _this.context.closePath();
-        _this.context.strokeStyle = color[i];
+        _this.context.strokeStyle = color;
         _this.context.lineWidth = mainAction.get("size", i);
         _this.context.stroke();
       }
