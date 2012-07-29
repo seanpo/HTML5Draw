@@ -28,6 +28,7 @@ DrawAction = function () {
   };
   this.length = 0;
   
+  // This function gets the specific action item in the given index
   this.get = function (key, index) {
     if (["x","y"].indexOf(key) !== -1){
       return _this.history["click"][key][index];
@@ -37,6 +38,7 @@ DrawAction = function () {
   }
 
   this.history = this.createHistory();
+
   this.setHistory = function (history){
     _this.history = history;
   }
@@ -99,8 +101,6 @@ DrawAction = function () {
     _history['drag'].push(_this.drag);
     _history['size'].push(_this.size);
     _history['color'].push(_this.color);
-
-    length++;
   }
 
   // This function recieves a set similar to that of history and updates the current History with it 
@@ -142,67 +142,75 @@ HTML5Draw = function (dom) {
   };
 
   // This is the consolidated Action List that is recieved from server
-  this.mainAction = new DrawAction();
+  this.actionList = [];
   // This is the information caught in the Stanza
   this.stanza = new DrawAction();
 
-  this.redraw = function (){
-    var mainAction = _this.mainAction;
-    var length = mainAction.length();
+  this.drawStanza = function (stanza){
+    var length = stanza.length();
      
-    for(var i = length - 1; i < length; i++){       
+    for(var i = 0; i < length; i++){       
       // If the step is to apply the paintbucket, then the location, and drawing is uneccesary
-      var x = mainAction.get("x", i);
-      var y = mainAction.get("y", i);
-      var color = mainAction.get("color", i);
+      var x = stanza.get("x", i);
+      var y = stanza.get("y", i);
+      var color = stanza.get("color", i);
 
-      if (mainAction.get("paintBucket", i)){
+      if (stanza.get("paintBucket", i)){
         _paintBucket(x, y, color);
       } else {
         _this.context.beginPath();
-        if(mainAction.get("drag", i) && i != 0){
-           _this.context.moveTo(mainAction.get("x", i - 1), mainAction.get("y", i - 1));
+        if(stanza.get("drag", i) && i != 0){
+           _this.context.moveTo(stanza.get("x", i - 1), stanza.get("y", i - 1));
         } else {
            _this.context.moveTo(x - 1, y);
         }
         _this.context.lineTo(x, y);
         _this.context.closePath();
         _this.context.strokeStyle = color;
-        _this.context.lineWidth = mainAction.get("size", i);
+        _this.context.lineWidth = stanza.get("size", i);
         _this.context.stroke();
       }
     }
+  };
+
+  this.redraw = function () {
+    for ( index in _this.actionList ) {
+      var stanza = _this.actionList[index]; 
+      _this.drawStanza(stanza);
+    }
+  };
+
+  this.draw = function () {
+    _this.drawStanza(_this.stanza);    
   }
 
   this.clearCanvas = function () {
-    _this.mainAction.clearHistory();
+    _this.actionList = [];
     _this.redraw();
-  }
+  };
 
   /********************* Utility Functions ***********************************/
   // converts an event object to 
-  this._createAction(e){
+  this._createAction = function (e){
     var $this = _this.$canvas;
     return { x : e.pageX - $this.offset().left, 
              y : e.pageY - $this.offset().top};
-  }
+  };
   /********************* Actions *********************************************/
   this.$canvas.mousedown( function (e) {
-    _this.mainAction.update( _this._createAction(e) );
-    // drag is set after the main action is updated because there is the possibility that the user will let go right after.
-    _this.mainAction.setDrag();      
-
     _this.stanza.update( _this._createAction(e) );
     _this.stanza.setDrag();
 
-    _this.redraw();
+    _this.draw()
 
     _this.$canvas.trigger("updateCanvas");
   });
 
   $(document).mouseup( function () {
-    _this.mainAction.unsetDrag();
     _this.stanza.unsetDrag();
+    _this.actionList.push(_this.stanza);
+
+    _this.redraw();
 
     _this.$canvas.trigger("stanzaComplete", [_this.stanza]);
     // A mouseup signifies a new stanza
@@ -210,11 +218,10 @@ HTML5Draw = function (dom) {
   });
 
   this.$canvas.mousemove( function (e) {
-    if ( _this.mainAction.drag && !_this.mainAction.paintBucket ){
-      _this.mainAction.update( _this._createAction(e) );
+    if ( _this.stanza.drag && !_this.stanza.paintBucket ){
       _this.stanza.update( _this._createAction(e) );
 
-      _this.redraw();
+      _this.draw();
 
       _this.$canvas.trigger("updateCanvas");
     }
