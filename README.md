@@ -1,3 +1,17 @@
+/********************************************************************************
+* Project: HTML5Canvas
+* Author: Sean Po
+* Date: 05/08/2012
+*
+* This is a script that allows you to implement a draw-able HTML5 Canvas on your website.
+*
+********************************************************************************/
+
+Pre-requisites:
+ The following two are javascript files that are required to allow you to save your canvas as a PNG. If you do not require saving the canvas as a PNG, then these are not required. These are not written by me, and if you want more information on the two, visit http://www.nihilogic.dk/labs/canvas2image/
+ - base64 - http://www.nihilogic.dk/labs/canvas2image/base64.js
+ - Canvas2Image - http://www.nihilogic.dk/labs/canvas2image/canvas2image.js
+
 To Use:
  - create an HTML 5 canvas
    ie. <canvas id="canvas"> </canvas>
