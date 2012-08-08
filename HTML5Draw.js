@@ -132,7 +132,7 @@ HTML5Draw = function (dom) {
   this.canvas = document.getElementById(dom);
 
   // Set up context, and set styles:
-  this.context = canvas.getContext("2d");
+  this.context = this.canvas.getContext("2d");
   this.context.lineJoin = "miter";
   this.context.canvas.height = this.$canvas.height();
   this.context.canvas.width = this.$canvas.width();
