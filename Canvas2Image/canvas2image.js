@@ -175,14 +175,24 @@ var Canvas2Image = (function() {
 		return oCanvas;
 	}
 
+  var toString = function ( mime, strData ) {
+        return strData.replace("data:" + mime + "\;base64\,",'' );
+  }
+
 	return {
 
-		saveAsPNG : function(oCanvas, bReturnImg, iWidth, iHeight) {
+		saveAsPNG : function(oCanvas, string, bReturnImg, iWidth, iHeight) {
 			if (!bHasDataURL) {
 				return false;
 			}
 			var oScaledCanvas = scaleCanvas(oCanvas, iWidth, iHeight);
-			var strData = oScaledCanvas.toDataURL("image/png");
+      var mime = "image/png";
+			var strData = oScaledCanvas.toDataURL(mime);
+      
+      if (string) {
+        return toString(mime, strData)
+      }
+
 			if (bReturnImg) {
 				return makeImageObject(strData);
 			} else {
@@ -191,7 +201,7 @@ var Canvas2Image = (function() {
 			return true;
 		},
 
-		saveAsJPEG : function(oCanvas, bReturnImg, iWidth, iHeight) {
+		saveAsJPEG : function(oCanvas, string, bReturnImg, iWidth, iHeight) {
 			if (!bHasDataURL) {
 				return false;
 			}
@@ -199,12 +209,16 @@ var Canvas2Image = (function() {
 			var oScaledCanvas = scaleCanvas(oCanvas, iWidth, iHeight);
 			var strMime = "image/jpeg";
 			var strData = oScaledCanvas.toDataURL(strMime);
-	
+
 			// check if browser actually supports jpeg by looking for the mime type in the data uri.
 			// if not, return false
 			if (strData.indexOf(strMime) != 5) {
 				return false;
 			}
+
+      if (string) {
+        return toString(strMime, strData);
+      }
 
 			if (bReturnImg) {
 				return makeImageObject(strData);
@@ -214,7 +228,7 @@ var Canvas2Image = (function() {
 			return true;
 		},
 
-		saveAsBMP : function(oCanvas, bReturnImg, iWidth, iHeight) {
+		saveAsBMP : function(oCanvas, string, bReturnImg, iWidth, iHeight) {
 			if (!(bHasImageData && bHasBase64)) {
 				return false;
 			}
@@ -223,8 +237,14 @@ var Canvas2Image = (function() {
 
 			var oData = readCanvasData(oScaledCanvas);
 			var strImgData = createBMP(oData);
+      var mime = "image/bmp";
+
+      if (string) {
+        return toString(mime, strImgData);
+      }
+
 			if (bReturnImg) {
-				return makeImageObject(makeDataURI(strImgData, "image/bmp"));
+				return makeImageObject(makeDataURI(strImgData, mime));
 			} else {
 				saveFile(makeDataURI(strImgData, strDownloadMime));
 			}
