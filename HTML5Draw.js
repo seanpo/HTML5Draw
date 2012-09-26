@@ -132,7 +132,7 @@ HTML5Draw = function (dom) {
   this.canvas = document.getElementById(dom);
 
   // Set up context, and set styles:
-  this.context = this.canvas.getContext("2d");
+  this.context = canvas.getContext("2d");
   this.context.lineJoin = "miter";
   this.context.canvas.height = this.$canvas.height();
   this.context.canvas.width = this.$canvas.width();
@@ -182,16 +182,14 @@ HTML5Draw = function (dom) {
 
   this.draw = function () {
     _this.drawStanza(_this.stanza);    
-  };
+  }
 
   this.clearCanvas = function () {
     _this.actionList = [];
+    var height = _this.context.canvas.height;
+    var width = _this.context.canvas.width ;
+    _this.context.clearRect(0, 0, width, height);
     _this.redraw();
-  };
-  
-  /********************* Canvas Tools ***************************************/
-  this.toPNG = function (){
-    return Canvas2Image.saveAsPNG(_this.canvas)
   };
 
   /********************* Utility Functions ***********************************/
@@ -201,7 +199,6 @@ HTML5Draw = function (dom) {
     return { x : e.pageX - $this.offset().left, 
              y : e.pageY - $this.offset().top};
   };
-
   /********************* Actions *********************************************/
   this.$canvas.mousedown( function (e) {
     _this.stanza.update( _this._createAction(e) );
