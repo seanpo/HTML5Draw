@@ -191,7 +191,19 @@ HTML5Draw = function (dom) {
     _this.context.clearRect(0, 0, width, height);
     _this.redraw();
   };
+  
+  /********************* Canvas Tools ***************************************/
+  this.toPNG = function (){
+    return Canvas2Image.saveAsPNG(_this.canvas, true)
+  };
 
+  this.toBMP = function (){
+    return Canvas2Image.saveAsBMP(_this.canvas, true)
+  };
+
+  this.toJPEG = function (){
+    return Canvas2Image.saveAsJPEG(_this.canvas, true)
+  };
   /********************* Utility Functions ***********************************/
   // converts an event object to 
   this._createAction = function (e){
